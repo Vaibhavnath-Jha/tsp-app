@@ -1,0 +1,4 @@
+streamlit==1.46.1
+streamlit-folium==0.25.0
+gamspy==1.12.1
+networkx==3.5
