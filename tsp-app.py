@@ -134,6 +134,17 @@ def solve_tsp(city_df, distance_df, **config):
     st.session_state["path"] = path
     st.session_state["stats"] = stats
 
+def _make_duplicates_unique(df: pd.DataFrame, mask):
+    """
+    Helper function to remove duplicates from city names.
+    Some cuntries can have same name for a city but they are distinct cities.
+    """
+    dup_indices: list = df.index[mask]
+    for i, idx in enumerate(dup_indices, start=1):
+        original = df.at[idx, "row.city"]
+        df.at[idx, "row.city"] = f"{original}{i}"
+
+    return df
 
 def prepInput():
     country_centroid = [51.1657, 10.4515]  # DE
@@ -196,6 +207,9 @@ def prepInput():
                     city_df = city_df.sample(
                         number_of_nodes, random_state=seed
                     ).reset_index(drop=True)
+                    mask = city_df.duplicated(subset=["row.city"], keep="first")
+                    if mask.any():
+                        city_df = _make_duplicates_unique(city_df, mask)
                 except ValueError:
                     raise Exception(
                         "Maxnimum nodes is greater than number of cities available. Reduce maximum number of nodes."
