@@ -7,8 +7,7 @@ import pandas as pd
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
-from folium.plugins import PolyLineTextPath
-from folium.plugins import AntPath
+from folium.plugins import AntPath, Fullscreen, MarkerCluster
 
 from src.tsp import tspModel
 
@@ -226,6 +225,7 @@ def plot_solution(city_df: pd.DataFrame, centroid: list[float], path: list):
     country_map = folium.Map(location=centroid, zoom_start=5)
 
     if len(city_df):
+        marker_cluster = MarkerCluster().add_to(country_map)
         for idx, (name, lat, long) in enumerate(
             city_df.itertuples(index=False, name=None)
         ):
@@ -239,7 +239,7 @@ def plot_solution(city_df: pd.DataFrame, centroid: list[float], path: list):
                 # Standard marker for others
                 folium.Marker(
                     [lat, long], popup=name, icon=folium.Icon(icon="info-sign")
-                ).add_to(country_map)
+                ).add_to(marker_cluster)
 
     if len(path):
         path_df = pd.DataFrame({"row.city": path})
@@ -247,27 +247,19 @@ def plot_solution(city_df: pd.DataFrame, centroid: list[float], path: list):
 
         AntPath(
             locations=final_path[["row.latitude", "row.longitude"]],
-            color="#FF0000",
+            color="#0099FF",
             delay=1000,
             dash_array=[20, 30],
             weight=5,
-            opacity=0.8,
+            opacity=1,
         ).add_to(country_map)
 
-        final_path = pd.concat([final_path, final_path.iloc[[0]]], ignore_index=True)
-
-        polyline = folium.PolyLine(
-            final_path[["row.latitude", "row.longitude"]],
-        ).add_to(country_map)
-
-        arrows = PolyLineTextPath(
-            polyline,
-            "➔",
-            repeat=True,
-            offset=7,
-            attributes={"fill": "red", "font-weight": "light", "font-size": "20"},
-        )
-        arrows.add_to(country_map)
+    Fullscreen(
+        position="topright",
+        title="Fullscreen",
+        title_cancel="Exit",
+        force_separate_button=True,
+    ).add_to(country_map)
 
     return country_map
 
@@ -307,14 +299,15 @@ def main():
             distance_df = dist_df.reset_index().melt(
                 id_vars="row.city", var_name="to_city", value_name="distance"
             )
-            named_formulation = [k for k, v in SUPPORTED_FORMULATIONS.items() if v == formulation]
+            named_formulation = [
+                k for k, v in SUPPORTED_FORMULATIONS.items() if v == formulation
+            ]
             with st.spinner(f"Solving TSP with {named_formulation[0]} formulation..."):
                 output_placeholder.empty()
                 if city_df.empty:
                     raise st.error("Select a country first")
-                print(f"Solving TSP-{formulation} for {config["country"]}...")
+                print(f"Solving TSP-{formulation} for {config['country']}...")
                 solve_tsp(city_df, distance_df, **config)
-
 
         if st.session_state["solutionFound"]:
             with output_placeholder.container():
