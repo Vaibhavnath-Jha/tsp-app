@@ -307,8 +307,8 @@ def main():
             distance_df = dist_df.reset_index().melt(
                 id_vars="row.city", var_name="to_city", value_name="distance"
             )
-
-            with st.spinner("Solving TSP..."):
+            named_formulation = [k for k, v in SUPPORTED_FORMULATIONS.items() if v == formulation]
+            with st.spinner(f"Solving TSP with {named_formulation[0]} formulation..."):
                 output_placeholder.empty()
                 if city_df.empty:
                     raise st.error("Select a country first")
